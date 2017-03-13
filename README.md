@@ -3,8 +3,8 @@
 ## By team Hoykhom_KMITL
 Member
 
-- Isara Naranirattisai
-- Peerawat Pipattanakulchai
-- Siridej Phanathanate
-- Patcharapon Jantana
-- Thanatcha Sangpetch
+- Isara Naranirattisai (Dream)
+- Peerawat Pipattanakulchai (Nay)
+- Siridej Phanathanate (Pao)
+- Patcharapon Jantana (Peach)
+- Thanatcha Sangpetch (Eao)
