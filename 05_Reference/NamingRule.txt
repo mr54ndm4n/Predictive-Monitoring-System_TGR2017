@@ -1,0 +1,37 @@
+Filename:
+	Source Code:
+		{Device or Module}_{Function}.{Extension}
+		ex.
+			Stm32_ReadMoisture.c
+
+		*If that source code is main/core file use
+			main.{Extension} or app.{Extension}
+
+	Others:
+		{Description}.{Extension}
+		ex.
+			README.md
+
+	GIT:
+		.git and .gitignore
+
+
+
+Commit Message:
+	"{Option}: {msg}"
+
+	Option:
+		docs:      Documents
+		style:     Style code to more readable (space, PEP8) but don't change code
+		feat:      Features
+		fix:       Fix bug or any problem
+		refactor:  Refactor code 
+		test:      Add test
+	msg:
+		- start with Uppercase(only 1st charactor) and then lowercase
+		- Recommend verb + noun 
+
+	
+
+
+
