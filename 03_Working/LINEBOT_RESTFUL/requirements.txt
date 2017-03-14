@@ -2,3 +2,4 @@ Flask
 line-bot-sdk
 sqlalchemy
 psycopg2
+requests
