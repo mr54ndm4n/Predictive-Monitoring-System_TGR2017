@@ -27,6 +27,7 @@ Commit Message:
 		fix:       Fix bug or any problem
 		refactor:  Refactor code 
 		test:      Add test
+		add:       Just Add file or dir
 	msg:
 		- start with Uppercase(only 1st charactor) and then lowercase
 		- Recommend verb + noun 
