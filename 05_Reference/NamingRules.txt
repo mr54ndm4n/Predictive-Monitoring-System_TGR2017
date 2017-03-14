@@ -15,6 +15,11 @@ Filename:
 	GIT:
 		.git and .gitignore
 
+	Scrume Meeting Log:
+		on "02_Project_Management" dir
+		ScrumsMeeting{Number of Meeting}-{day}{A | N}.docx
+
+		{A | N} is 'A'fternoon or 'N'ight
 
 
 Commit Message:
