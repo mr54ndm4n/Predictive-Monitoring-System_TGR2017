@@ -1,9 +1,12 @@
 from picamera import PiCamera
 from time import *
 
-camera = PiCamera()
-resolution = (640, 480)
+def takePic():
+	camera = PiCamera()
+	resolution = (640, 480)
 
-takeTime = strftime("%d-%m-%Y %H:%M:%S", gmtime())
+	takeTime = strftime("%d-%m-%Y %H:%M:%S", localtime())
 
-camera.capture("/home/pi/Pictures/"+takeTime+".jpg")
+	path = "/home/pi/Pictures/"+takeTime+".jpg"
+
+	camera.capture(path)
