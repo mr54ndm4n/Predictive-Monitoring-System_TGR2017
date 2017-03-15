@@ -88,7 +88,7 @@ def callback():
 def index():
     return "<h1>Hello, Top Gun Rally 2017</h1>"
 
-@app.route("/member.json")
+@app.route("/member.csv")
 def memberJson():
     conn = psycopg2.connect(connectionString)
     cur = conn.cursor()
@@ -105,8 +105,8 @@ def memberJson():
         s += '\n'
     # print str(s)
     return Response(s, 
-            mimetype='application/json',
-            headers={'Content-Disposition':'attachment;filename=hoykhom.json'})
+            mimetype='application/csv',
+            headers={'Content-Disposition':'attachment;filename=hoykhom.csv'})
 
 def createWeatherdb():
     try:
