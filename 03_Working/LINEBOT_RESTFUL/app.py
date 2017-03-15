@@ -101,7 +101,7 @@ def memberJson():
         "department, " + "gpa, " + "afterGraduate,\n"
     for row in rows:
         for ele in row:
-            s += str(ele) + ','
+            s += str(ele) + ', '
         s += '\n'
     # print str(s)
     return Response(s, 
@@ -128,10 +128,13 @@ def updateWeather():
     for d in date:
         data = requests.get('http://api.wunderground.com/api/b728a7436f25b9f2/history_'+d+'/q/TH/Bangkok.json')
         data = data.json()
+        temp = data['history']['dailysummary'][0]['meantempm']
         conn = psycopg2.connect(connectionString)
         cur = conn.cursor()
-        query = "SELECT * FROM weather WHERE wdate=;" + d
+        query = "INSERT INTO weather (wdate, temp) VALUES ('{}', {})"
+        query = query.format(d, temp)
         cur.execute(query)
+        print(query)
         conn.commit()    
 
 def getWeather():
