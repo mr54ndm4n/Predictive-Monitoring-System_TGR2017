@@ -373,7 +373,7 @@ void StartTask01(void const * argument)/////////////////////////////////////////
 {
 
   /* USER CODE BEGIN 5 */
-	char sendStr[256] = "Hello TESA\n";
+	char sendStr[256] = "\nHello TESA TOPGUN Rally 2017";
 	//sprintf(sendStr,);
 	HAL_UART_Transmit(&huart2, (uint8_t *)sendStr, strlen(sendStr), 2000);  // Send Greeting
 	
@@ -393,10 +393,10 @@ void StartTask01(void const * argument)/////////////////////////////////////////
 			osMailFree(Queue01Handle,data);
 		
 			
-			HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
+			
 
 		}
-    osDelay(200);
+    osDelay(5);
   }
   /* USER CODE END 5 */ 
 }
@@ -419,7 +419,8 @@ void StartTask02(void const * argument)
 	data->END_TEXT = 0x03;
 
 	osMailPut(Queue01Handle,data);  // Send to MailQueue
-				
+		
+	HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
     osDelay(1);
   }
   /* USER CODE END StartTask02 */
