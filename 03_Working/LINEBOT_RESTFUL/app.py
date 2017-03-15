@@ -1,7 +1,10 @@
+#!/usr/bin/python
+#-*-coding: utf-8 -*-
+
 import paho.mqtt.client as mqtt
 import os
 import urlparse
-from flask import Flask, render_template, request, jsonify, send_from_directory, abort
+from flask import Flask, render_template, request, jsonify, send_from_directory, abort, Response
 from linebot import (
     LineBotApi, WebhookHandler,
 )
@@ -22,6 +25,15 @@ import json
 import requests
 import datetime
 
+import psycopg2
+
+dbname = 'd9h676ge1i7hgt'
+user = 'gvcvbeuobxhyvh'
+host = 'ec2-23-21-80-230.compute-1.amazonaws.com'
+password = 'ece432448e4dac9e2124ee90a8630b2f11b2b532ae97645eadc1032eff950ea5'
+
+connectionString = "dbname='{}' user='{}' host='{}' password='{}'"
+connectionString = connectionString.format(dbname, user, host, password)
 
 
 app = Flask(__name__)
@@ -72,16 +84,93 @@ def callback():
 
     return 'OK'
 
+@app.route("/")
+def index():
+    return "<h1>Hello, Top Gun Rally 2017</h1>"
+
+@app.route("/member.csv")
+def memberJson():
+    conn = psycopg2.connect(connectionString)
+    cur = conn.cursor()
+    query = """
+        SELECT * FROM hoykhom_data;
+        """
+    cur.execute(query)
+    rows = cur.fetchall()
+    s = "id, " + "fname, " + "lname, " + "university, " + "year, " + \
+        "department, " + "gpa, " + "afterGraduate,\n"
+    for row in rows:
+        for ele in row:
+            s += str(ele) + ', '
+        s += '\n'
+    # print str(s)
+    return Response(s, 
+            mimetype='application/csv',
+            headers={'Content-Disposition':'attachment;filename=hoykhom.csv'})
+
+def createWeatherdb():
+    try:
+        conn = psycopg2.connect(connectionString)
+        cur = conn.cursor()
+        sql_command = """
+            CREATE TABLE weather (
+                wdate DATE PRIMARY KEY,
+                temp REAL);"""
+        cur.execute(sql_command)
+        conn.commit()
+        r = 'success'
+    except:
+        r = "error happens"
+    return r
+
+def updateWeather():
+    date = ['20170310', '20170311', '20170312', '20170313', '20170314']
+    for d in date:
+        data = requests.get('http://api.wunderground.com/api/b728a7436f25b9f2/history_'+d+'/q/TH/Bangkok.json')
+        data = data.json()
+        temp = data['history']['dailysummary'][0]['meantempm']
+        conn = psycopg2.connect(connectionString)
+        cur = conn.cursor()
+        query = "INSERT INTO weather (wdate, temp) VALUES ('{}', {})"
+        query = query.format(d, temp)
+        cur.execute(query)
+        print(query)
+        conn.commit()    
+
+def getWeather():
+    s = ''
+    date = ['20170310', '20170311', '20170312', '20170313', '20170314']
+    for d in date:
+        s += 'Day (' + d + '): ' + str() + '\n Temp: '
+        conn = psycopg2.connect(connectionString)
+        cur = conn.cursor()
+        query = "SELECT * FROM weather WHERE wdate='" + d + "';"
+        cur.execute(query)  
+        rows = cur.fetchone()
+        s += str(rows[1]) + '\n================\n'
+        print s
+    return s
+
 # HANDLE MESSAGE
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    print event
-    input_text = event.message.text.lower()
-    print('input: ' + input_text)
-    if input_text == 'info':
-        client.publish("/GET/DATA", json.loads(str(event.source))['userId'])
-        # PRINT PLEASE WAIT
-        line_bot_api.reply_message( event.reply_token, TextSendMessage(text="Please wait....") )
+    print 'tired'
+    print event.message.text.encode('utf-8')
+    if event.message.text.encode('utf-8') == 'เหนื่อยไหม':
+
+        line_bot_api.reply_message( event.reply_token, TextSendMessage(text=getWeather()) )
+    else:
+        line_bot_api.reply_message( event.reply_token, TextSendMessage(text = 'Line Bot สามารถทำงานได้'))
+        input_text = event.message.text.lower()
+        if input_text == 'info':
+            client.publish("/GET/DATA", json.loads(str(event.source))['userId'])
+            # PRINT PLEASE WAIT
+            line_bot_api.reply_message( event.reply_token, TextSendMessage(text="Please wait....") )
+
+@app.route('/weather')
+def weather():
+    return '<pre>' + getWeather() + '</pre>'
+
 
 @app.route('/currentweather', methods=['POST'])
 def CurrentWeather():
