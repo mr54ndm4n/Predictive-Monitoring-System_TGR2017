@@ -48,6 +48,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>  // sprintf 
 #include <string.h> // strlen
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -58,7 +59,6 @@ UART_HandleTypeDef huart2;
 
 osThreadId Task01Handle;
 osThreadId Task02Handle;
-//osMessageQId Queue01Handle;
 osMailQId Queue01Handle;
 
 /* USER CODE BEGIN PV */
@@ -73,7 +73,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC_Init(void);
 static void MX_USART2_UART_Init(void);
-void StartDefaultTask(void const * argument);
+void StartTask01(void const * argument);
 void StartTask02(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -92,8 +92,6 @@ uint32_t POTvolt; //for ADC_IN1 in mV. Will be later used in the second part of 
 static volatile uint16_t adcVal = 0;
 static volatile uint16_t newAdcVal = 0;
 
-// uint32_t Signal_A = 0x0001;
-
 typedef struct {
 	uint8_t  START_TEXT ;
 	uint8_t  NUMBER_DATA; 
@@ -102,26 +100,13 @@ typedef struct {
 	uint8_t  END_TEXT;
 } DATA_PACKAGE;
 
-typedef struct {
-	uint8_t  START_TEXT ;
-	uint8_t  NUMBER_DATA; 
-	uint16_t ADC_DATA ;
-	uint16_t HUMIDITY;
-	uint8_t  END_TEXT;
-} DATA2_PACKAGE;
 
-//properties_t *data = osMailAlloc(Queue01Handle ,osWaitForever);
- 
 /* USER CODE END 0 */
 
 int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	//////////////////////////////////////////////////////////////////////
-//	sprintf(initString, "Hello TESA TOPGUN RALLY 2017\n");
-//	while(__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC)==RESET){}
-//	HAL_UART_Transmit(&huart2, (uint8_t *) initString, strlen(initString), 2000);  // Send Greeting
 
   /* USER CODE END 1 */
 
@@ -158,6 +143,7 @@ int main(void)
 	/* Turn on LD2 */
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET );
 
+
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -174,7 +160,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of Task01 */
-  osThreadDef(Task01, StartDefaultTask, osPriorityNormal, 0, 128);
+  osThreadDef(Task01, StartTask01, osPriorityNormal, 0, 128);
   Task01Handle = osThreadCreate(osThread(Task01), NULL);
 
   /* definition and creation of Task02 */
@@ -187,11 +173,8 @@ int main(void)
 
   /* Create the queue(s) */
   /* definition and creation of Queue01 */
-	osMailQDef(Queue01, 5,  DATA_PACKAGE); //////////////// ????
+  osMailQDef(Queue01, 16,  DATA_PACKAGE); //////////////// ????
 	Queue01Handle = osMailCreate(osMailQ(Queue01), NULL);
-	
-  //osMessageQDef(Queue01, 16, uint16_t);
-  //Queue01Handle = osMessageCreate(osMessageQ(Queue01), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -207,6 +190,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+			
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
@@ -231,13 +215,12 @@ void SystemClock_Config(void)
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = 16;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLLMUL_8;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLLMUL_4;
   RCC_OscInitStruct.PLL.PLLDIV = RCC_PLLDIV_2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -289,7 +272,7 @@ static void MX_ADC_Init(void)
   hadc.Init.OversamplingMode = DISABLE;
   hadc.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
   hadc.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc.Init.SamplingTime = ADC_SAMPLETIME_19CYCLES_5;
+  hadc.Init.SamplingTime = ADC_SAMPLETIME_39CYCLES_5;
   hadc.Init.ScanConvMode = ADC_SCAN_DIRECTION_FORWARD;
   hadc.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc.Init.ContinuousConvMode = ENABLE;
@@ -349,8 +332,8 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Channel1_IRQn interrupt configuration */
-//  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 3, 0);
-//  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+  //HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 3, 0);
+  //HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
 }
 
@@ -367,11 +350,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct;
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : LD2_Pin */
   GPIO_InitStruct.Pin = LD2_Pin;
@@ -384,102 +366,61 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-/////////////////////////////////////////////////////////////
-void LED_Toggle(void){
-	for(;;){
-		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
-		osDelay(250);
-	}
-}
-
 /* USER CODE END 4 */
 
-/* StartDefaultTask function */
-void StartDefaultTask(void const * argument)
+/* StartTask01 function */
+void StartTask01(void const * argument)///////////////////////////////////////////////////////////
 {
 
   /* USER CODE BEGIN 5 */
+	char sendStr[256] = "Hello TESA\n";
+	//sprintf(sendStr,);
+	HAL_UART_Transmit(&huart2, (uint8_t *)sendStr, strlen(sendStr), 2000);  // Send Greeting
 	
-	/////////////////////////////////////////////////////////////
-	sprintf(initString, "Hello TESA TOPGUN RALLY 2017\n");
-	while(__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC)==RESET){}
-	HAL_UART_Transmit(&huart2, (uint8_t *) &initString, strlen(initString), 500);  // Send Greeting
-
-//	osSignalSet(StartTask02, Signal_A);  // send signal
-
-//	osEvent mail_event = osMailGet(Queue01Handle, 0);
-//	DATA2_PACKAGE *data = (DATA2_PACKAGE *)mail_event.value.p;
-//	osMailFree(Queue01Handle,data);
-		/* Infinite loop */
+	osSignalSet(Task02Handle, Signal_A);  // send signal
+	/* Infinite loop */
   for(;;)
   {
-		/////////////////////////////////////////////////////////////
-//		sprintf(initString, "Hello TESA TOPGUN RALLY 2017\n");
-//		while(__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC)==RESET){}
-//		HAL_UART_Transmit(&huart2, (uint8_t *) &initString, strlen(initString), 500);  // Send Greeting
-
-		osSignalSet(Task02Handle, Signal_A);  // send signal
-
+		
 		osEvent mail_event = osMailGet(Queue01Handle, 0);
-		DATA2_PACKAGE *data = (DATA2_PACKAGE *)mail_event.value.p;
-		osMailFree(Queue01Handle,data);
-				
-    osDelay(1);
+		if(mail_event.status == osEventMail){
+			DATA_PACKAGE *data = (DATA_PACKAGE *)mail_event.value.p;  /// Receive data
+			
+			sprintf(sendStr,"\nSTART TEXT: %d, NUMBER DATA: %d, ADC DATA: %d, Humidity DATA: %d, END TEXT: %d",data->START_TEXT,
+											data->NUMBER_DATA,data->ADC_DATA,data->HUMIDITY,data->END_TEXT);
+			HAL_UART_Transmit(&huart2, (uint8_t *)sendStr, strlen(sendStr), 2000);
+		
+			osMailFree(Queue01Handle,data);
+		
+			
+			HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
+
+		}
+    osDelay(200);
   }
   /* USER CODE END 5 */ 
 }
 
 /* StartTask02 function */
-
 void StartTask02(void const * argument)
 {
   /* USER CODE BEGIN StartTask02 */
-	
-	/////////////////////////////////////////////////////////////
-//	osSignalWait(Signal_A, osWaitForever); /////
-//	
-//	while (HAL_ADC_PollForConversion(&hadc, 200) != HAL_OK) {}
-//	adcVal  = HAL_ADC_GetValue(&hadc);
-//		
-//	newAdcVal = adcVal * 2 ;
-//		//Calculation
-//	
-//	DATA_PACKAGE *data = osMailAlloc(Queue01Handle ,osWaitForever) ;  // Pack DATA
-//	data->START_TEXT = 0x02;
-//	data->NUMBER_DATA = 0x04;
-//	data->ADC_DATA = adcVal;
-//	data->HUMIDITY = newAdcVal ;
-//	data->END_TEXT = 0x03;
-//	
-//	osMailPut(Queue01Handle,data);  // Send to MailQueue
-		
-	//LED_Toggle();
-  
-  /* Infinite loop */ 	
+	osSignalWait(Signal_A, osWaitForever);
+  /* Infinite loop */
   for(;;)
   {
-		/////////////////////////////////////////////////////////////
-//		osSignalWait(Signal_A , osWaitForever);
+		adcVal  = HAL_ADC_GetValue(&hadc);	
 		
-		while (HAL_ADC_PollForConversion(&hadc, 200) != HAL_OK) {}
-		adcVal  = HAL_ADC_GetValue(&hadc);
-//			
-//		newAdcVal = adcVal * 2 ;
-//			//Calculation
-//		
-//		DATA_PACKAGE *data = osMailAlloc(Queue01Handle ,osWaitForever) ;  // Pack DATA
-//		data->START_TEXT = 0x02;
-//		data->NUMBER_DATA = 0x04;
-//		data->ADC_DATA = adcVal;
-//		data->HUMIDITY = newAdcVal ;
-//		data->END_TEXT = 0x03;
-//		
-//		osMailPut(Queue01Handle, data);  // Send to MailQueue
-			
-		LED_Toggle();
-		osDelay(1);
-			
-//    osDelay(1);
+	DATA_PACKAGE *data = osMailAlloc(Queue01Handle ,osWaitForever) ;  // Pack DATA
+	data->START_TEXT = 0x02;
+	data->NUMBER_DATA = 0x04;
+	data->ADC_DATA = adcVal;
+	data->HUMIDITY = newAdcVal ;
+	data->END_TEXT = 0x03;
+
+	osMailPut(Queue01Handle,data);  // Send to MailQueue
+				
+    osDelay(1);
   }
   /* USER CODE END StartTask02 */
 }
