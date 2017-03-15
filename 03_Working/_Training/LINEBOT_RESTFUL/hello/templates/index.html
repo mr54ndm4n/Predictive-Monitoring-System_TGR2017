@@ -1,0 +1,64 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Top Gun Rally 2017</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.3.2/css/bulma.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+      html, body, section {
+        height: 100%;
+      }
+      .title {
+        font-size: 5em;
+      }
+      img {
+        width: 60%;
+      }
+      .hero-body {
+        padding-top:  20px !important;
+        height: 100%;
+      }
+      .logoo {
+        width: auto;
+        height: 170px !important;
+      }
+    </style>
+</head>
+<body>
+
+
+<section class="hero is-medium is-dark is-bold">
+
+<div class="hero-body">
+<div class="container">
+  <div class="columns is-vcentered">
+    <div class="column is-8 is-offset-2" style="text-align: center;">
+      <h1 class="title">
+        Hoykhom_KMITL<br/ >@Top Gun Rally 2017
+      </h1>
+    </div>
+  </div>
+  <div class="columns in-vcentered">
+    <div class="column is-10 is-offset-1" style="text-align: center;">
+      <img src="{% static 'cover.png'%}">
+    </div>
+  </div>
+  <div class="columns in-vcentered" style="margin-top: 30px;">
+    <div class="column is-4" style="text-align: center;">
+      <img class="logoo" src="{% static 'tesa-logo.png'%}">
+    </div>
+    <div class="column is-4" style="text-align: center;">
+      <img class="logoo" src="{% static 'tni-logo.png'%}">
+    </div>
+    <div class="column is-4" style="text-align: center;">
+      <img class="logoo" src="{% static 'topgun-logo.png'%}">
+    </div>
+  </div>
+</div>
+</div>
+</section>
+
+</body>
+</html>
