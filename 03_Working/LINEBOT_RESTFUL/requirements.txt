@@ -4,4 +4,3 @@ line-bot-sdk
 paho-mqtt
 psycopg2
 requests
-werkzeug

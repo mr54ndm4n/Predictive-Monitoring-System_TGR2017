@@ -2,8 +2,6 @@
 #-*-coding: utf-8 -*-
 
 import paho.mqtt.client as mqtt
-import os
-import urlparse
 from flask import Flask, render_template, request, jsonify, send_from_directory, abort, Response
 from linebot import (
     LineBotApi, WebhookHandler,
@@ -15,14 +13,11 @@ from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage, ImageSendMessage, TemplateSendMessage, ButtonsTemplate,
     PostbackTemplateAction, MessageTemplateAction, URITemplateAction
 )
-from werkzeug import secure_filename
 import psycopg2
 import os
 import json
 import requests
-import datetime
 from models import Weather
-import psycopg2
 
 dbname = 'd9h676ge1i7hgt'
 user = 'gvcvbeuobxhyvh'
@@ -192,19 +187,3 @@ def weather():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-# requests.post(posturl, data={'picture': 'eiei','temperature': 3.2,'soil_moisture': 2.3,'weather_description': 'good','air_pressure': 33,'air_moisture': 65})
-
-# def Get_time():
-#     line_bot_api.reply_message(event.reply_token, TextSendMessage(
-#         text=str(datetime.datetime.now())))
-
-
-# def Control_led(control_text):
-#     client.publish("/GET/DATA", control_text)
-
-
-# def Dont_know():
-#     line_bot_api.reply_message(
-#         event.reply_token, TextSendMessage(text='I don\'t know'))
