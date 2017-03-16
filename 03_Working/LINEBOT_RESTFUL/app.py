@@ -13,16 +13,17 @@ from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage, ImageSendMessage, TemplateSendMessage, ButtonsTemplate,
     PostbackTemplateAction, MessageTemplateAction, URITemplateAction
 )
+from werkzeug import secure_filename
 import psycopg2
 import os
 import json
 import requests
 from models import Weather
 
-dbname = 'd9h676ge1i7hgt'
-user = 'gvcvbeuobxhyvh'
-host = 'ec2-23-21-80-230.compute-1.amazonaws.com'
-password = 'ece432448e4dac9e2124ee90a8630b2f11b2b532ae97645eadc1032eff950ea5'
+dbname = 'dclnbc95nirou'
+user = 'bgieuvuhdxfpbm'
+host = 'ec2-54-243-124-240.compute-1.amazonaws.com'
+password = 'c53fe199c7b3cdc9f4d1269777d33e35b9bda30f99f07e7139e6cbec706405aa'
 
 position = 'Bangkok'
 
@@ -41,6 +42,9 @@ client = mqtt.Client()
 client.username_pw_set("lineapi", "test1234")
 client.connect('m13.cloudmqtt.com', 11675, 60)
 client.loop_start()
+
+app.config['UPLOAD_FOLDER'] = '.'
+app.config['ALLOWED_EXTENSIONS'] = set(['png', 'jpg', 'jpeg'])
 
 ######################################################################
 ##                          MAIN FUNCTION                            #
@@ -95,11 +99,12 @@ def createWeatherdb():
         cur = conn.cursor()
         sql_command = """
             CREATE TABLE weather (
-                     TIMESTAMP PRIMARY KEY DEFAULT CURRENT_TIMESTAMP,
+                timestamp TIMESTAMP PRIMARY KEY DEFAULT CURRENT_TIMESTAMP,
                 s_moisture REAL,
                 w_description VARCHAR(25),
                 a_pressure INT,
                 a_moisture REAL,
+                durian INT,
                 picture VARCHAR(150));"""
         cur.execute(sql_command)
         conn.commit()
@@ -117,41 +122,56 @@ def getLatestWeather():
         """
     cur.execute(query)
     data = cur.fetchone()
-    w = Weather(data[0], data[1], data[2], data[3], data[4], data[5])
+    w = Weather(data[0], data[1], data[2], data[3], data[4], data[5], data[6])
     return w
+
+def allowed_file(filename):
+	return '.' in filename and \
+	filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route("/dataIn", methods=['POST'])
 def dataIn():
     #Insert db
+    if request.method == 'POST':
+        #data from raspberry pi
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+			filename = secure_filename(file.filename)
+			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        print file.filename
+        # s_moisture = request.form.get('s_moisture')
+        durian = 10
+        s_moisture = 81
+        #get data from wunderground
+        data = requests.get('http://api.wunderground.com/api/b728a7436f25b9f2/conditions/q/TH/%s.json' % position)
+        data = data.json()
 
-    #get data from wunderground
-    data = requests.get('http://api.wunderground.com/api/b728a7436f25b9f2/conditions/q/TH/%s.json' % position)
-    data = data.json()
+        # print('=================JSON=================')
+        # print json.dumps(data['current_observation'], sort_keys=True, indent=4, separators=(',', ': '))
+        # print('\n\n====================Summary==============')
 
-    print('=================JSON=================')
-    print json.dumps(data['current_observation'], sort_keys=True, indent=4, separators=(',', ': '))
-    print('\n\n====================Summary==============')
+        w_description = data['current_observation']['weather']
+        a_pressure = int(data['current_observation']['pressure_mb'])
+        a_moisture = float(data['current_observation']['relative_humidity'].rstrip("%"))
+        picture = 'https://hoykhom-bot.herokuapp.com/uploads/' + file.filename
 
-    w_description = data['current_observation']['weather']
-    a_pressure = int(data['current_observation']['pressure_mb'])
-    a_moisture = float(data['current_observation']['relative_humidity'].rstrip("%"))
+        print('\nw_description :' + w_description)
+        print('\na_pressure :' + str(a_pressure))
+        print('\na_moisture :' + str(a_moisture))
 
-    s_moisture = 678
-    picture = 'https://henryherz.files.wordpress.com/2013/05/takei2.jpg?w=611&h=410'
-
-    print('\nw_description :' + w_description)
-    print('\na_pressure :' + str(a_pressure))
-    print('\na_moisture :' + str(a_moisture))
-
-    #Insert to database
-    conn = psycopg2.connect(connectionString)
-    cur = conn.cursor()    
-    query = "INSERT INTO weather (s_moisture, w_description, a_pressure, a_moisture, picture) VALUES ({}, '{}', {}, {}, '{}');"
-    query = query.format(s_moisture, w_description, a_pressure, a_moisture, picture)
-    print query
-    cur.execute(query)
-    conn.commit()
-    return True
+        #Insert to database
+        conn = psycopg2.connect(connectionString)
+        cur = conn.cursor()    
+        query = "INSERT INTO weather (s_moisture, w_description, a_pressure, a_moisture, picture, durian) VALUES ({}, '{}', {}, {}, '{}', {});"
+        query = query.format(s_moisture, w_description, a_pressure, a_moisture, picture, durian)
+        print query
+        cur.execute(query)
+        conn.commit()
+        return 'Done'
 
 # HANDLE MESSAGE
 @handler.add(MessageEvent, message=TextMessage)
@@ -172,6 +192,7 @@ def handle_message(event):
                       'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
                       'ความชื้นในอากาศ : ' + str(w.a_moisture) + '%%'
             line_bot_api.push_message(user, TextMessage(text=showstr))
+            line_bot_api.push_message(user, TextMessage(text="Pic:"+str(w.picture)))
             pic = ImageSendMessage(
                 original_content_url=w.picture,
                 preview_image_url=w.picture
