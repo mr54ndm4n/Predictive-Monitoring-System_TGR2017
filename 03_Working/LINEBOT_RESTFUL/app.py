@@ -48,6 +48,30 @@ app.config['UPLOAD_FOLDER'] = '.'
 app.config['ALLOWED_EXTENSIONS'] = set(['png', 'jpg', 'jpeg'])
 
 ######################################################################
+##                          LINE FUNCTION                            #
+######################################################################
+
+def lineDataRealtime(event):
+    client.publish("/LINE/REALTIME", json.loads(str(event.source))['userId'])
+    line_bot_api.push_message(json.loads(str(event.source))['userId'], TextMessage(text="Please wait!..."))
+
+def lineDataLatest(event):
+    w = getLatestWeather()
+    user = json.loads(str(event.source))['userId']
+    showstr =   'REALTIME Information: \n' + \
+                'ความชื้นของดิน : ' + str(int(w.s_moisture)) + ' %\n' + \
+                'สภาพอากาศ : ' + w.w_description + '\n' + \
+                'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
+                'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %' + \
+                'อุณหภูมิ : ' + str(w.temp_c) + '°C'
+    line_bot_api.push_message(user, TextMessage(text=showstr))
+    pic = ImageSendMessage(
+        original_content_url=w.picture,
+        preview_image_url=w.picture
+    )
+    line_bot_api.push_message(user, pic)
+
+######################################################################
 ##                          MAIN FUNCTION                            #
 ######################################################################
 
@@ -73,64 +97,6 @@ def callback():
 @app.route("/")
 def index():
     return "<h1>Hello, Top Gun Rally 2017</h1>"
-
-@app.route("/member.csv")
-def memberJson():
-    conn = psycopg2.connect(connectionString)
-    cur = conn.cursor()
-    query = """
-        SELECT * FROM hoykhom_data;
-        """
-    cur.execute(query)
-    rows = cur.fetchall()
-    s = "id, " + "fname, " + "lname, " + "university, " + "year, " + \
-        "department, " + "gpa, " + "afterGraduate,\n"
-    for row in rows:
-        for ele in row:
-            s += str(ele) + ', '
-        s += '\n'
-    # print str(s)
-    return Response(s, 
-            mimetype='application/csv',
-            headers={'Content-Disposition':'attachment;filename=hoykhom.csv'})
-
-def createWeatherdb():
-    try:
-        conn = psycopg2.connect(connectionString)
-        cur = conn.cursor()
-        sql_command = """
-            CREATE TABLE weather (
-                timestamp TIMESTAMP PRIMARY KEY DEFAULT CURRENT_TIMESTAMP,
-                s_moisture REAL,
-                w_description VARCHAR(25),
-                a_pressure INT,
-                a_moisture REAL,
-                durian INT,
-                durian_pic VARCHAR(150),
-                picture VARCHAR(150),
-                temp REAL);"""
-        cur.execute(sql_command)
-        conn.commit()
-        r = 'success'
-    except:
-        r = "error happens"
-    return r
-
-def createDuriandb():
-    try:
-        conn = psycopg2.connect(connectionString)
-        cur = conn.cursor()
-        sql_command = """
-            CREATE TABLE durian (
-                id SERIAL PRIMARY KEY,
-                pic VARCHAR(150),
-                amount INT);"""
-        cur.execute(sql_command)
-        conn.commit()
-        r = 'success'
-    except:
-        r = "error happens"
-    return r 
 
 def getLatestWeather():
     # SELECT * FROM weather ORDER BY timestamp DESC;
@@ -177,38 +143,22 @@ def dataUpdate():
         cur.execute(query)
         conn.commit()
         return 'Done'
-    # conn = psycopg2.connect(connectionString)
-    # cursor = conn.cursor()
-    # cursor.execute("UPDATE table_name SET update_column_name=(%s) WHERE ref_column_id_value = (%s)", ("column_name","value_you_want_to_update",));
-    # conn.commit()
-    # cursor.close()
 
-@app.route("/dataIn", methods=['POST'])
-def dataIn():
-    #Insert db
-    if request.method == 'POST':
-        #data from raspberry pi
-        file = request.files['file']
-        if file and allowed_file(file.filename):
-			filename = secure_filename(file.filename)
-			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        print file.filename
-        s_moisture = request.form.get('s_moisture')
+
+
+
+
+def newWeatherInsert(picture, s_moisture):
         durian = -1
         durian_pic = ''
         #get data from wunderground
         data = requests.get('http://api.wunderground.com/api/b728a7436f25b9f2/conditions/q/TH/%s.json' % position)
         data = data.json()
 
-        # print('=================JSON=================')
-        # print json.dumps(data['current_observation'], sort_keys=True, indent=4, separators=(',', ': '))
-        # print('\n\n====================Summary==============')
-
         w_description = data['current_observation']['weather']
         a_pressure = int(data['current_observation']['pressure_mb'])
         a_moisture = float(data['current_observation']['relative_humidity'].rstrip("%"))
         temp = data['current_observation']['temp_c']
-        picture = 'https://hoykhom-bot.herokuapp.com/uploads/' + file.filename
 
         print('\nw_description :' + w_description)
         print('\na_pressure :' + str(a_pressure))
@@ -222,6 +172,52 @@ def dataIn():
         print query
         cur.execute(query)
         conn.commit()
+
+@app.route("/dataRealtime", methods=['POST'])
+def dataRealtime():
+    if request.method == 'POST':
+        #data from raspberry pi
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+			filename = secure_filename(file.filename)
+			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        print file.filename
+        s_moisture = request.form.get('s_moisture')
+        picture = 'https://hoykhom-bot.herokuapp.com/uploads/' + file.filename
+        newWeatherInsert(picture, s_moisture)
+
+        s_moisture = request.form.get('s_moisture')
+        user = request.form.get('user')
+
+        w = getLatestWeather()
+        # PRINT PLEASE WAIT
+        showstr =   'REALTIME Information: \n' + \
+                    'ความชื้นของดิน : ' + str(int(w.s_moisture)) + ' %\n' + \
+                    'สภาพอากาศ : ' + w.w_description + '\n' + \
+                    'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
+                    'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %' + \
+                    'อุณหภูมิ : ' + str(w.temp_c) + '°C'
+        line_bot_api.push_message(user, TextMessage(text=showstr))
+        pic = ImageSendMessage(
+            original_content_url=w.picture,
+            preview_image_url=w.picture
+        )
+        line_bot_api.push_message(user, pic)
+        return 'Done'    
+
+@app.route("/dataIn", methods=['POST'])
+def dataIn():
+    #Insert db
+    if request.method == 'POST':
+        #data from raspberry pi
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+			filename = secure_filename(file.filename)
+			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        print file.filename
+        s_moisture = request.form.get('s_moisture')
+        picture = 'https://hoykhom-bot.herokuapp.com/uploads/' + file.filename
+        newWeatherInsert(picture, s_moisture)
         return 'Done'
 
 # HANDLE MESSAGE
@@ -234,29 +230,58 @@ def handle_message(event):
         line_bot_api.reply_message( event.reply_token, TextSendMessage(text=getWeather()) )
     else:
         input_text = event.message.text.lower()
-        if input_text == 'info':
-            w = getLatestWeather()
-            user = json.loads(str(event.source))['userId']
-            # PRINT PLEASE WAIT
-            showstr = 'ความชื้นของดิน : ' + str(int(w.s_moisture)) + ' %\n' + \
-                      'สภาพอากาศ : ' + w.w_description + '\n' + \
-                      'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
-                      'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %'
-            line_bot_api.push_message(user, TextMessage(text=showstr))
-            # line_bot_api.push_message(user, TextMessage(text="durian_pic :" + w.durian_pic + "durian : " + str(w.durian)))
-            pic = ImageSendMessage(
-                original_content_url=w.picture,
-                preview_image_url=w.picture
-            )
-            line_bot_api.push_message(user, pic)
-            line_bot_api.push_message(user, TextMessage(text='อุณหภูมิ : ' + str(w.temp_c) + '°C'))
-            line_bot_api.push_message(user, TextMessage(text="Pic:"+str(w.picture)))
+        if input_text == 'realtime':
+            lineDataRealtime(event)
+        elif input_text == 'info':
+            lineDataLatest(event)
         else:
             line_bot_api.reply_message( event.reply_token, TextSendMessage(text = 'Line Bot สามารถทำงานได้'))
 
 @app.route('/weather')
 def weather():
     return '<pre>' + getWeatherCurrent() + '</pre>'
+
+######################################################################
+#                        CREATE DATABASE                             #
+######################################################################
+def createWeatherdb():
+    try:
+        conn = psycopg2.connect(connectionString)
+        cur = conn.cursor()
+        sql_command = """
+            CREATE TABLE weather (
+                timestamp TIMESTAMP PRIMARY KEY DEFAULT CURRENT_TIMESTAMP,
+                s_moisture REAL,
+                w_description VARCHAR(25),
+                a_pressure INT,
+                a_moisture REAL,
+                durian INT,
+                durian_pic VARCHAR(150),
+                picture VARCHAR(150),
+                temp REAL);"""
+        cur.execute(sql_command)
+        conn.commit()
+        r = 'success'
+    except:
+        r = "error happens"
+    return r
+
+def createDuriandb():
+    try:
+        conn = psycopg2.connect(connectionString)
+        cur = conn.cursor()
+        sql_command = """
+            CREATE TABLE durian (
+                id SERIAL PRIMARY KEY,
+                pic VARCHAR(150),
+                amount INT);"""
+        cur.execute(sql_command)
+        conn.commit()
+        r = 'success'
+    except:
+        r = "error happens"
+    return r 
+
 
 
 if __name__ == "__main__":
