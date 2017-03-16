@@ -2,8 +2,6 @@ Flask
 gunicorn
 line-bot-sdk
 paho-mqtt
-Flask
-sqlalchemy
 psycopg2
 requests
 werkzeug
