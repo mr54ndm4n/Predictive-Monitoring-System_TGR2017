@@ -155,14 +155,20 @@ def uploaded_file(filename):
 @app.route("/dataUpdate", methods=['POST'])
 def dataUpdate():
     if request.method == 'POST':
-        file = request.files['file']
-        if file and allowed_file(file.filename):
-			filename = secure_filename(file.filename) + str(time.strftime("%d-%m-%Y-%H-%M-%S", time.gmtime()))
-			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        durian_pic = 'https://hoykhom-bot.herokuapp.com/uploads/' + file.filename
         amount = request.form.get('amount')
+        try:
+            file = request.files['file']
+            if file and allowed_file(file.filename):
+                filename = file.filename + str(time.strftime("%d-%m-%Yh%Hm%Ms%S", time.gmtime())) + '.jpg'
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            print filename
+            durian_pic = 'https://hoykhom-bot.herokuapp.com/uploads/' + filename   
+        except:
+            durian_pic = 'NOT FOUND'
+            print 'NO AMOUNT 2'
+
         print durian_pic
-        print amount   
+        print amount
         conn = psycopg2.connect(connectionString)
         cur = conn.cursor()    
         query = "INSERT INTO durian (pic, amount) VALUES ('{}', {})"
