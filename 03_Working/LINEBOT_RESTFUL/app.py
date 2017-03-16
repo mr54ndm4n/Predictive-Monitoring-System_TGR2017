@@ -58,7 +58,7 @@ def lineDataRealtime(event):
 def lineDataLatest(event):
     w = getLatestWeather()
     user = json.loads(str(event.source))['userId']
-    showstr =   'REALTIME Information: \n' + \
+    showstr =   'Period Information: \n' + \
                 'ความชื้นของดิน : ' + str(int(w.s_moisture)) + ' %\n' + \
                 'สภาพอากาศ : ' + w.w_description + '\n' + \
                 'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
