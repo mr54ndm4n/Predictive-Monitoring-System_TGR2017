@@ -105,6 +105,7 @@ def createWeatherdb():
                 a_pressure INT,
                 a_moisture REAL,
                 durian INT,
+                durian_pic VARCHAR(150),
                 picture VARCHAR(150));"""
         cur.execute(sql_command)
         conn.commit()
@@ -143,9 +144,8 @@ def dataIn():
 			filename = secure_filename(file.filename)
 			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         print file.filename
-        # s_moisture = request.form.get('s_moisture')
-        durian = 10
-        s_moisture = 81
+        s_moisture = request.form.get('s_moisture')
+        durian = -1
         #get data from wunderground
         data = requests.get('http://api.wunderground.com/api/b728a7436f25b9f2/conditions/q/TH/%s.json' % position)
         data = data.json()
@@ -187,10 +187,10 @@ def handle_message(event):
             w = getLatestWeather()
             user = json.loads(str(event.source))['userId']
             # PRINT PLEASE WAIT
-            showstr = 'ความชื้นของดิน : ' + str(w.s_moisture) + '%%\n' + \
+            showstr = 'ความชื้นของดิน : ' + str(w.s_moisture) + '%\n' + \
                       'สภาพอากาศ : ' + w.w_description + '\n' + \
                       'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
-                      'ความชื้นในอากาศ : ' + str(w.a_moisture) + '%%'
+                      'ความชื้นในอากาศ : ' + str(w.a_moisture) + '%'
             line_bot_api.push_message(user, TextMessage(text=showstr))
             line_bot_api.push_message(user, TextMessage(text="Pic:"+str(w.picture)))
             pic = ImageSendMessage(
