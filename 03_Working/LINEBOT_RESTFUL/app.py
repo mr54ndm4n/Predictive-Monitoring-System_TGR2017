@@ -62,7 +62,7 @@ def lineDataLatest(event):
                 'ความชื้นของดิน : ' + str(int(w.s_moisture)) + ' %\n' + \
                 'สภาพอากาศ : ' + w.w_description + '\n' + \
                 'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
-                'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %' + \
+                'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %\n' + \
                 'อุณหภูมิ : ' + str(w.temp_c) + '°C'
     line_bot_api.push_message(user, TextMessage(text=showstr))
     pic = ImageSendMessage(
@@ -195,7 +195,7 @@ def dataRealtime():
                     'ความชื้นของดิน : ' + str(int(w.s_moisture)) + ' %\n' + \
                     'สภาพอากาศ : ' + w.w_description + '\n' + \
                     'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
-                    'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %' + \
+                    'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %\n' + \
                     'อุณหภูมิ : ' + str(w.temp_c) + '°C'
         line_bot_api.push_message(user, TextMessage(text=showstr))
         pic = ImageSendMessage(
