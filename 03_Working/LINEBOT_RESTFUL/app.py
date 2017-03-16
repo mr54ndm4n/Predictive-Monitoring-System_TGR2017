@@ -114,6 +114,22 @@ def createWeatherdb():
         r = "error happens"
     return r
 
+def createDuriandb():
+    try:
+        conn = psycopg2.connect(connectionString)
+        cur = conn.cursor()
+        sql_command = """
+            CREATE TABLE durian (
+                id SERIAL PRIMARY KEY,
+                pic VARCHAR(150),
+                amount INT);"""
+        cur.execute(sql_command)
+        conn.commit()
+        r = 'success'
+    except:
+        r = "error happens"
+    return r 
+
 def getLatestWeather():
     # SELECT * FROM weather ORDER BY timestamp DESC;
     conn = psycopg2.connect(connectionString)
@@ -123,7 +139,7 @@ def getLatestWeather():
         """
     cur.execute(query)
     data = cur.fetchone()
-    w = Weather(data[0], data[1], data[2], data[3], data[4], data[5], data[6])
+    w = Weather(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7])
     return w
 
 def allowed_file(filename):
@@ -133,6 +149,31 @@ def allowed_file(filename):
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route("/dataUpdate", methods=['POST'])
+def dataUpdate():
+    if request.method == 'POST':
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+			filename = secure_filename(file.filename)
+			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        durian_pic = 'https://hoykhom-bot.herokuapp.com/uploads/' + file.filename
+        amount = request.form.get('amount')
+        print durian_pic
+        print amount   
+        conn = psycopg2.connect(connectionString)
+        cur = conn.cursor()    
+        query = "INSERT INTO durian (pic, amount) VALUES ('{}', {})"
+        query = query.format(durian_pic, amount)
+        print query
+        cur.execute(query)
+        conn.commit()
+        return 'Done'
+    # conn = psycopg2.connect(connectionString)
+    # cursor = conn.cursor()
+    # cursor.execute("UPDATE table_name SET update_column_name=(%s) WHERE ref_column_id_value = (%s)", ("column_name","value_you_want_to_update",));
+    # conn.commit()
+    # cursor.close()
 
 @app.route("/dataIn", methods=['POST'])
 def dataIn():
@@ -146,6 +187,7 @@ def dataIn():
         print file.filename
         s_moisture = request.form.get('s_moisture')
         durian = -1
+        durian_pic = ''
         #get data from wunderground
         data = requests.get('http://api.wunderground.com/api/b728a7436f25b9f2/conditions/q/TH/%s.json' % position)
         data = data.json()
@@ -166,8 +208,8 @@ def dataIn():
         #Insert to database
         conn = psycopg2.connect(connectionString)
         cur = conn.cursor()    
-        query = "INSERT INTO weather (s_moisture, w_description, a_pressure, a_moisture, picture, durian) VALUES ({}, '{}', {}, {}, '{}', {});"
-        query = query.format(s_moisture, w_description, a_pressure, a_moisture, picture, durian)
+        query = "INSERT INTO weather (s_moisture, w_description, a_pressure, a_moisture, picture, durian_pic, durian) VALUES ({}, '{}', {}, {}, '{}', '{}', {});"
+        query = query.format(s_moisture, w_description, a_pressure, a_moisture, picture, durian_pic, durian)
         print query
         cur.execute(query)
         conn.commit()
@@ -192,12 +234,13 @@ def handle_message(event):
                       'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
                       'ความชื้นในอากาศ : ' + str(w.a_moisture) + '%'
             line_bot_api.push_message(user, TextMessage(text=showstr))
-            line_bot_api.push_message(user, TextMessage(text="Pic:"+str(w.picture)))
+            # line_bot_api.push_message(user, TextMessage(text="durian_pic :" + w.durian_pic + "durian : " + str(w.durian)))
             pic = ImageSendMessage(
                 original_content_url=w.picture,
                 preview_image_url=w.picture
             )
             line_bot_api.push_message(user, pic)
+            line_bot_api.push_message(user, TextMessage(text="Pic:"+str(w.picture)))
         else:
             line_bot_api.reply_message( event.reply_token, TextSendMessage(text = 'Line Bot สามารถทำงานได้'))
 
