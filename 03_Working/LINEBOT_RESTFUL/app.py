@@ -18,6 +18,7 @@ import psycopg2
 import os
 import json
 import requests
+import time
 from models import Weather
 
 dbname = 'dclnbc95nirou'
@@ -106,7 +107,8 @@ def createWeatherdb():
                 a_moisture REAL,
                 durian INT,
                 durian_pic VARCHAR(150),
-                picture VARCHAR(150));"""
+                picture VARCHAR(150),
+                temp REAL);"""
         cur.execute(sql_command)
         conn.commit()
         r = 'success'
@@ -139,7 +141,7 @@ def getLatestWeather():
         """
     cur.execute(query)
     data = cur.fetchone()
-    w = Weather(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7])
+    w = Weather(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8])
     return w
 
 def allowed_file(filename):
@@ -155,7 +157,7 @@ def dataUpdate():
     if request.method == 'POST':
         file = request.files['file']
         if file and allowed_file(file.filename):
-			filename = secure_filename(file.filename)
+			filename = secure_filename(file.filename) + str(time.strftime("%d-%m-%Y-%H-%M-%S", time.gmtime()))
 			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         durian_pic = 'https://hoykhom-bot.herokuapp.com/uploads/' + file.filename
         amount = request.form.get('amount')
@@ -199,6 +201,7 @@ def dataIn():
         w_description = data['current_observation']['weather']
         a_pressure = int(data['current_observation']['pressure_mb'])
         a_moisture = float(data['current_observation']['relative_humidity'].rstrip("%"))
+        temp = data['current_observation']['temp_c']
         picture = 'https://hoykhom-bot.herokuapp.com/uploads/' + file.filename
 
         print('\nw_description :' + w_description)
@@ -208,8 +211,8 @@ def dataIn():
         #Insert to database
         conn = psycopg2.connect(connectionString)
         cur = conn.cursor()    
-        query = "INSERT INTO weather (s_moisture, w_description, a_pressure, a_moisture, picture, durian_pic, durian) VALUES ({}, '{}', {}, {}, '{}', '{}', {});"
-        query = query.format(s_moisture, w_description, a_pressure, a_moisture, picture, durian_pic, durian)
+        query = "INSERT INTO weather (s_moisture, w_description, a_pressure, a_moisture, picture, durian_pic, durian, temp) VALUES ({}, '{}', {}, {}, '{}', '{}', {}, {});"
+        query = query.format(s_moisture, w_description, a_pressure, a_moisture, picture, durian_pic, durian, temp)
         print query
         cur.execute(query)
         conn.commit()
@@ -229,10 +232,10 @@ def handle_message(event):
             w = getLatestWeather()
             user = json.loads(str(event.source))['userId']
             # PRINT PLEASE WAIT
-            showstr = 'ความชื้นของดิน : ' + str(w.s_moisture) + '%\n' + \
+            showstr = 'ความชื้นของดิน : ' + str(int(w.s_moisture)) + ' %\n' + \
                       'สภาพอากาศ : ' + w.w_description + '\n' + \
                       'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
-                      'ความชื้นในอากาศ : ' + str(w.a_moisture) + '%'
+                      'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %'
             line_bot_api.push_message(user, TextMessage(text=showstr))
             # line_bot_api.push_message(user, TextMessage(text="durian_pic :" + w.durian_pic + "durian : " + str(w.durian)))
             pic = ImageSendMessage(
@@ -240,6 +243,7 @@ def handle_message(event):
                 preview_image_url=w.picture
             )
             line_bot_api.push_message(user, pic)
+            line_bot_api.push_message(user, TextMessage(text='อุณหภูมิ : ' + str(w.temp_c) + '°C'))
             line_bot_api.push_message(user, TextMessage(text="Pic:"+str(w.picture)))
         else:
             line_bot_api.reply_message( event.reply_token, TextSendMessage(text = 'Line Bot สามารถทำงานได้'))
