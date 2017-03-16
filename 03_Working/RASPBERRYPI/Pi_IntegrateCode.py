@@ -40,11 +40,12 @@ def postToDB(data, pathFile, dateTime):
 
         #print(filestack_url)
         #print(pathFile)
+
         pic_file = {'file': open(pathFile, 'rb')}
 
         r = requests.post(filestack_url, data={'s_moisture': data}, files = pic_file)
 
-        print("\nUpload Complete!\n")
+        print("Upload Complete!\n")
 
 
 con = lite.connect('pic.db')    # Database File
@@ -61,35 +62,35 @@ def insertDB(DATA, PIC_PATH):
         return takeTime
 
 
-PORT = '/dev/ttyACM0' # PORT THAT STM32 CONNECT WITH RPi
-def readSerial(deviceAddress):
-        """main"""
-        logger = modbus_tk.utils.create_logger("console")
+# PORT = '/dev/ttyACM0' # PORT THAT STM32 CONNECT WITH RPi
+# def readSerial(deviceAddress):
+#         """main"""
+#         logger = modbus_tk.utils.create_logger("console")
 
-        try:
-        #Connect to the slave
-                master = modbus_rtu.RtuMaster(
-                        serial.Serial(  port=PORT,
-                                        baudrate=115200,
-                                        bytesize=8,
-                                        parity='N',
-                                        stopbits=1,
-                                        xonxoff=0
-                        )
-                )
-                master.set_timeout(5.0)
-                master.set_verbose(True)
-                logger.info("connected")      
+#         try:
+#         #Connect to the slave
+#                 master = modbus_rtu.RtuMaster(
+#                         serial.Serial(  port=PORT,
+#                                         baudrate=115200,
+#                                         bytesize=8,
+#                                         parity='N',
+#                                         stopbits=1,
+#                                         xonxoff=0
+#                         )
+#                 )
+#                 master.set_timeout(5.0)
+#                 master.set_verbose(True)
+#                 logger.info("connected")      
 
-                #logger.info(master.execute(add, cst.READ_INPUT_REGISTERS, 0, 1))
-                master.write(b"-") ####################### Add to test drop one byte read of STM32
-                data = master.execute(deviceAddress, cst.READ_INPUT_REGISTERS, 0, 1)
-                print "Modbus Data : " + str(data[0])
+#                 #logger.info(master.execute(add, cst.READ_INPUT_REGISTERS, 0, 1))
+#                 master.write(b"-") ####################### Add to test drop one byte read of STM32
+#                 data = master.execute(deviceAddress, cst.READ_INPUT_REGISTERS, 0, 1)
+#                 print "Modbus Data : " + str(data[0])
 
-        except modbus_tk.modbus.ModbusError as exc:
-                logger.error("%s- Code=%d", exc, exc.get_exception_code())
+#         except modbus_tk.modbus.ModbusError as exc:
+#                 logger.error("%s- Code=%d", exc, exc.get_exception_code())
 
-        return data
+#         return data
 
 def readSoilMoisture():
         ser = serial.Serial(                    #Setup UART spec ; $ demsg | grep tty >>> 'Check PORT'
@@ -98,25 +99,25 @@ def readSoilMoisture():
                 parity = serial.PARITY_NONE,
                 stopbits = serial.STOPBITS_ONE,
                 bytesize = serial.EIGHTBITS,
-                timeout = 2.0,
+                timeout = 2.0
         )
 
-        ser.flush()
-        moisture = ser.read(1)
+        for i in range (0,5):
+                moisture = ser.read(1)
+
+        ser.close()
 
         data = str(ord(moisture)*4)
-        print("\n\nRECIEVE_DATA::::: "+data+"\n\n")
-        ser.close()
-        return data    
+        print("RECIEVE_DATA::::: "+data+"\n")
+        return data
+   
         
 ###################################################################################################################
 
 def main():
-        print("STARTING PROCESS...\n")
+        print("\nSTARTING PROCESS...\n")
 
-        urlDB = ""
         urlPic = takePic()
-        data = "950"
 #       data = readSerial(17)
         data = readSoilMoisture()
         dateTime = insertDB(data, urlPic)
@@ -130,5 +131,4 @@ def main():
         print("COMPLETE PROCESS!!!\n")
 
 ###################################################################################################################
-
 main()
