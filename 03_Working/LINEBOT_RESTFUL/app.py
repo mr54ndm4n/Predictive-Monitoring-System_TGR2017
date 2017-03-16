@@ -47,6 +47,9 @@ client.loop_start()
 app.config['UPLOAD_FOLDER'] = '.'
 app.config['ALLOWED_EXTENSIONS'] = set(['png', 'jpg', 'jpeg'])
 
+P_USER = 'U1cd32735e4982894d17b74784e904b90'
+DRY = False
+
 ######################################################################
 ##                          LINE FUNCTION                            #
 ######################################################################
@@ -58,11 +61,11 @@ def lineDataRealtime(event):
 def lineDataLatest(event):
     w = getLatestWeather()
     user = json.loads(str(event.source))['userId']
-    showstr =   'REALTIME Information: \n' + \
+    showstr =   'PERIOD Information: \n' + \
                 'ความชื้นของดิน : ' + str(int(w.s_moisture)) + ' %\n' + \
                 'สภาพอากาศ : ' + w.w_description + '\n' + \
                 'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
-                'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %' + \
+                'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %\n' + \
                 'อุณหภูมิ : ' + str(w.temp_c) + '°C'
     line_bot_api.push_message(user, TextMessage(text=showstr))
     pic = ImageSendMessage(
@@ -155,10 +158,16 @@ def newWeatherInsert(picture, s_moisture):
         data = requests.get('http://api.wunderground.com/api/b728a7436f25b9f2/conditions/q/TH/%s.json' % position)
         data = data.json()
 
-        w_description = data['current_observation']['weather']
-        a_pressure = int(data['current_observation']['pressure_mb'])
-        a_moisture = float(data['current_observation']['relative_humidity'].rstrip("%"))
-        temp = data['current_observation']['temp_c']
+        try:
+            w_description = data['current_observation']['weather']
+            a_pressure = int(data['current_observation']['pressure_mb'])
+            a_moisture = float(data['current_observation']['relative_humidity'].rstrip("%"))
+            temp = data['current_observation']['temp_c']
+        except:
+            w_description = 'Not Available'
+            a_pressure = 0
+            a_moisture = 0.0
+            temp = 0
 
         print('\nw_description :' + w_description)
         print('\na_pressure :' + str(a_pressure))
@@ -195,7 +204,7 @@ def dataRealtime():
                     'ความชื้นของดิน : ' + str(int(w.s_moisture)) + ' %\n' + \
                     'สภาพอากาศ : ' + w.w_description + '\n' + \
                     'ความกดอากาศ : ' + str(w.a_pressure) + ' pha\n' + \
-                    'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %' + \
+                    'ความชื้นในอากาศ : ' + str(int(w.a_moisture)) + ' %\n' + \
                     'อุณหภูมิ : ' + str(w.temp_c) + '°C'
         line_bot_api.push_message(user, TextMessage(text=showstr))
         pic = ImageSendMessage(
@@ -203,6 +212,7 @@ def dataRealtime():
             preview_image_url=w.picture
         )
         line_bot_api.push_message(user, pic)
+        
         return 'Done'    
 
 @app.route("/dataIn", methods=['POST'])
@@ -216,6 +226,11 @@ def dataIn():
 			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         print file.filename
         s_moisture = request.form.get('s_moisture')
+        if s_moisture <=10 and not DRY:
+            line_bot_api.push_message(P_USER, TextMessage(text="เหมือนว่าน้ำจะแห้งนะ ไปรดน้ำ!!"))
+            DRY = True
+        else:
+            DRY = False
         picture = 'https://hoykhom-bot.herokuapp.com/uploads/' + file.filename
         newWeatherInsert(picture, s_moisture)
         return 'Done'
