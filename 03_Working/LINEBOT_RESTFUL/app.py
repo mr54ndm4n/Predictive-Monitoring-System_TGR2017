@@ -27,7 +27,7 @@ host = 'ec2-54-243-124-240.compute-1.amazonaws.com'
 password = 'c53fe199c7b3cdc9f4d1269777d33e35b9bda30f99f07e7139e6cbec706405aa'
 
 position = 'Bangkok'
-
+is_dry = False
 connectionString = "dbname='{}' user='{}' host='{}' password='{}'"
 connectionString = connectionString.format(dbname, user, host, password)
 
@@ -48,7 +48,6 @@ app.config['UPLOAD_FOLDER'] = '.'
 app.config['ALLOWED_EXTENSIONS'] = set(['png', 'jpg', 'jpeg'])
 
 P_USER = 'U1cd32735e4982894d17b74784e904b90'
-DRY = False
 
 ######################################################################
 ##                          LINE FUNCTION                            #
@@ -155,7 +154,7 @@ def newWeatherInsert(picture, s_moisture):
         durian = -1
         durian_pic = ''
         #get data from wunderground
-        data = requests.get('http://api.wunderground.com/api/b728a7436f25b9f2/conditions/q/TH/%s.json' % position)
+        data = requests.get('   ' % position)
         data = data.json()
 
         try:
@@ -182,10 +181,27 @@ def newWeatherInsert(picture, s_moisture):
         cur.execute(query)
         conn.commit()
 
+@app.route("/getlatest")
+def getlatest():
+    w = getLatestWeather()
+    wdict = {
+        "weather": {
+            "timestamp": w.timestamp,
+            "soil_moisture": w.s_moisture,
+            "weather_description": w.w_description,
+            "air_pressure": w.a_pressure,
+            "air_moisture": w.a_moisture,
+            "picture": w.picture,
+            "temp_c": w.temp_c
+        }
+    }
+    return jsonify(wdict)
+
 @app.route("/dataRealtime", methods=['POST'])
 def dataRealtime():
     if request.method == 'POST':
         #data from raspberry pi
+        print 'REALTIME....................................'
         file = request.files['file']
         if file and allowed_file(file.filename):
 			filename = secure_filename(file.filename)
@@ -220,17 +236,20 @@ def dataIn():
     #Insert db
     if request.method == 'POST':
         #data from raspberry pi
+        global is_dry
         file = request.files['file']
         if file and allowed_file(file.filename):
 			filename = secure_filename(file.filename)
 			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         print file.filename
         s_moisture = request.form.get('s_moisture')
-        if s_moisture <=10 and not DRY:
+        print('mosture is %d :::::' % int(s_moisture))
+        print('is dry: ' + str(is_dry))
+        if int(s_moisture) <=10 and not is_dry:
             line_bot_api.push_message(P_USER, TextMessage(text="เหมือนว่าน้ำจะแห้งนะ ไปรดน้ำ!!"))
-            DRY = True
-        else:
-            DRY = False
+            is_dry = True
+        elif int(s_moisture) > 100:
+            is_dry = False
         picture = 'https://hoykhom-bot.herokuapp.com/uploads/' + file.filename
         newWeatherInsert(picture, s_moisture)
         return 'Done'
