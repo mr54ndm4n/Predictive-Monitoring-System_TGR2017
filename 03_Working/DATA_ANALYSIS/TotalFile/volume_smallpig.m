@@ -22,7 +22,7 @@ function varargout = volume_smallpig(varargin)
 
 % Edit the above text to modify the response to help volume_smallpig
 
-% Last Modified by GUIDE v2.5 17-Mar-2017 06:42:11
+% Last Modified by GUIDE v2.5 17-Mar-2017 11:16:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -176,8 +176,11 @@ function enter_Callback(hObject, eventdata, handles)
 % hObject    handle to enter (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-    src='durainpi.jpg';
-    I = imread(src);
+    jsonValue = webread( 'http://hoykhom-bot.herokuapp.com/getlatest');
+    [X, map]=imread(jsonValue.weather.picture,'jpg');
+   
+    src=X;
+    I = X;
     BW = im2bw(I,0.53);
     BW = not(BW);
     BW_filled = imfill(BW,'holes');
@@ -216,9 +219,9 @@ function enter_Callback(hObject, eventdata, handles)
     minRow = heigh;
     maxRow = 0;
 
-
-    for col=1:wide
-        countPixel = 0;
+    sum=0;
+    for col=1:wide 
+        countPixel = 0; 
        for row=1:heigh              
            if BW2(row,col) == 1
                 countPixel = countPixel +1 ;            
@@ -237,7 +240,8 @@ function enter_Callback(hObject, eventdata, handles)
        if countPixel < 120  && checkFirstCol == 1 && checkLastCol == 0 && col > firstCol + 90
            checkLastCol = 1;
            lastCol = col;
-       end          
+       end   
+          sum=sum+countPixel;
         r = countPixel/2.0;
         realR = r*scallingPix;
         area = 3.14*realR*realR*scallingPix;    
@@ -247,9 +251,12 @@ function enter_Callback(hObject, eventdata, handles)
         if countPixel > 100
             volume = volume + area;
         end
+          
 
     end
-
+    
+    areaoutput=sum*scallingPix;
+    
     txt = fprintf('\n Area = %.2f cm^3 \n', volume);
 
     widthDurian = (maxRow - minRow) * scallingPix
@@ -260,6 +267,7 @@ function enter_Callback(hObject, eventdata, handles)
     set(handles.ratio,'String',ratio);
     set(handles.height,'String', heightDurian);
     set(handles.width,'String',widthDurian);
+    set(handles.area,'String',areaoutput);
     
     set(handles.imsrc,'String',src);
 
@@ -321,6 +329,29 @@ function scaleP_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function scaleP_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to scaleP (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function area_Callback(hObject, eventdata, handles)
+% hObject    handle to area (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of area as text
+%        str2double(get(hObject,'String')) returns contents of area as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function area_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to area (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

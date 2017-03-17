@@ -22,7 +22,7 @@ function varargout = MainGUI_TOPGUN(varargin)
 
 % Edit the above text to modify the response to help MainGUI_TOPGUN
 
-% Last Modified by GUIDE v2.5 17-Mar-2017 09:29:47
+% Last Modified by GUIDE v2.5 17-Mar-2017 12:20:07
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -112,8 +112,12 @@ function disease_Callback(hObject, eventdata, handles)
 % hObject    handle to disease (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+checkDurainQuality('title,confirm close');
 
-nameFile = 'ทุเรียนติดโรค.jpg';
-command = ['python classifyDurian.py ',nameFile];
-[status,cmdout] = system(command)
 
+% --- Executes on button press in calculation.
+function calculation_Callback(hObject, eventdata, handles)
+% hObject    handle to calculation (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+calculation_moisturizer('title,confirm close');
