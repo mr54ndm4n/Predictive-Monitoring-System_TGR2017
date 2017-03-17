@@ -1,0 +1,12 @@
+I = imread('pencil.jpg');
+grayImage = rgb2gray(I);
+ndims(grayImage);
+imshow(I);
+BW1 = edge(grayImage,'sobel');
+BW2 = edge(grayImage,'canny');
+figure;
+imshowpair(BW1,BW2,'montage');
+title('Sobel Filter                                   Canny Filter');
+b=imread('colour.jpg');
+surf(double(b(1:8:end,1:8:end))),zlim([0 255]);
+set(gca,'ydir','reverse');
