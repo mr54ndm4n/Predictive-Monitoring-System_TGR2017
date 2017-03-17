@@ -36,21 +36,29 @@ for led in leds:
 
 # Set Pic
 pathFilePic = "/home/pi/Pictures/"
-WIDTH = 150
-HIGH = 150
+WIDTH_Preview = 240
+HIGH_Preview = 240
+WIDTH_Origin = 1024
+HIGH_Origin = 1024
 
+# global path_Preview
+# global path_Origin
 
 def takePic():
         camera = PiCamera()
-        camera.resolution = (WIDTH, HIGH)
+        camera.resolution = (WIDTH_Preview, HIGH_Preview)
+        camera.brightness = 70
         takeTime = strftime("%d-%m-%Yh%Hm%Ms%S", localtime())
-        nameFile = takeTime+".jpg"
-        path = pathFilePic+nameFile
+        nameFile_Preview = 's'+takeTime+".jpg"
+        # nameFile_Origin = 'b'+takeTime+".jpg"
+        path_Preview = pathFilePic+nameFile_Preview
+        # path_Origin = pathFilePic+nameFile_Origin
         print("TAKING PICTURE...")
-        camera.capture(path)
+        camera.capture(path_Preview)
+        # camera.capture(path_Origin)
         camera.close()
         print("COMPLETE TAKE PICTURE!\n")
-        return path
+        return path_Preview
 
 
 # MQTT
@@ -63,29 +71,20 @@ def on_message(client, userdata, msg):
         message = str(msg.payload)
         print ("got message:: " + message)
 
+        GPIO.output(leds[LED_BLUE], True)
         print("\nSTARTING PROCESS...\n")
 
-        try:
-                GPIO.output(leds[LED_BLUE], True)
+        urlPic = takePic()
+        data = readSoilMoisture()
+        # data = "496"
 
-                urlPic = takePic()
-                #data = readSoilMoisture()
-                data = "276"
-
-                GPIO.output(leds[LED_BLUE], False)
-                GPIO.output(leds[LED_GREEN], True)
-
-                print("COMPLETE PROCESS!!!\n")
-        except:
-                for i in range(0,3):
-                        GPIO.output(leds[i], False)
-                GPIO.output(leds[LED_RED], True)
-
+        print("COMPLETE PROCESS!!!\n")
+        GPIO.output(leds[LED_BLUE], False)
         postRealtime(data, urlPic, message)
 ##########################################################
 
 
-def postRealtime(data, pathFile, user):
+def postRealtime(data, pathFile_Preview, user):
         print("Uploading...\n")
 
         filestack_url = 'http://hoykhom-bot.herokuapp.com/dataRealtime'
@@ -93,14 +92,15 @@ def postRealtime(data, pathFile, user):
         #print(filestack_url)
         #print(pathFile)
 
-        pic_file = {'file': open(pathFile, 'rb')}
+        pic_file_Preview = {'file': open(pathFile_Preview, 'rb')}
+        # pic_file_Origin = {'file': open(path_Origin, 'rb')}
 
-        r = requests.post(filestack_url, data={'s_moisture': data, 'user': user}, files = pic_file)
+        r = requests.post(filestack_url, data={'s_moisture': data, 'user': user}, files = pic_file_Preview)
 
         print("Upload Complete!\n")
 
 
-def postToDB(data, pathFile, dateTime):
+def postToDB(data, pathFile_Preview):
         print("Uploading...\n")
 
         filestack_url = 'http://hoykhom-bot.herokuapp.com/dataIn'
@@ -108,9 +108,10 @@ def postToDB(data, pathFile, dateTime):
         #print(filestack_url)
         #print(pathFile)
 
-        pic_file = {'file': open(pathFile, 'rb')}
+        pic_file_Preview = {'file': open(pathFile_Preview, 'rb')}
+        # pic_file_Origin = {'file': open(path_Origin, 'rb')}
 
-        r = requests.post(filestack_url, data={'s_moisture': data}, files = pic_file)
+        r = requests.post(filestack_url, data={'s_moisture': data}, files = pic_file_Preview)
 
         print("Upload Complete!\n")
 
@@ -135,8 +136,42 @@ def readSoilMoisture():
         return data
 
 
+def main():
+        GPIO.output(leds[LED_BLUE], True)
+        print("\nSTARTING PROCESS...\n")
+        path_Preview = takePic()
+        data = readSoilMoisture()
+
+        # print(dateTime+": Done Local Process!\n")
+
+        print("Start upload data to TGR2017!")
+        print("Processing...\n")
+        postToDB(data, path_Preview)
+
+        print("COMPLETE PROCESS!!!\n")
+        GPIO.output(leds[LED_BLUE], False)
+        #print(str(LED_RED))
+
 ##########################################################################################################
 
+#####################################
+##              PERIOD             ##
+#####################################
+from threading import Thread
+
+class PeriodThread(Thread):
+    def __init__(self):
+        self.stopped = False
+        Thread.__init__(self)
+    def run(self):
+        while not self.stopped:
+            self.downloadValue()
+            sleep(15)
+    def downloadValue(self):
+        main()
+
+myThread = PeriodThread()
+myThread.start()
 
 client = mqtt.Client()
 # Assign event callbacks
@@ -147,6 +182,9 @@ client.connect('m13.cloudmqtt.com', 11675, 60)
 client.loop_start()
 
 client.subscribe("/LINE/REALTIME" ,0 )
+
+
+GPIO.output(leds[LED_GREEN], True)
 run = True
 count = 0
 while run:

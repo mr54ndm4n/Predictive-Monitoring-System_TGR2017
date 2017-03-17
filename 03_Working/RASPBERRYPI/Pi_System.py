@@ -74,20 +74,13 @@ def on_message(client, userdata, msg):
         print("\nSTARTING PROCESS...\n")
 
         try:
-                GPIO.output(leds[LED_BLUE], True)
 
                 urlPic = takePic()
                 data = readSoilMoisture()
                 # data = "496"
 
-                GPIO.output(leds[LED_BLUE], False)
-                GPIO.output(leds[LED_GREEN], True)
-
                 print("COMPLETE PROCESS!!!\n")
         except:
-                for i in range(0,3):
-                        GPIO.output(leds[i], False)
-                GPIO.output(leds[LED_RED], True)
 
         postRealtime(data, urlPic, message)
 ##########################################################
@@ -146,12 +139,9 @@ def readSoilMoisture():
 
 
 def main():
-        for i in range(0,3):
-                GPIO.output(leds[i], False)
         print("\nSTARTING PROCESS...\n")
 
         try:
-                GPIO.output(leds[LED_BLUE], True)
                 path_Preview = takePic()
         #       data = readSerial(17)
                 data = readSoilMoisture()
@@ -163,14 +153,8 @@ def main():
                 print("Processing...\n")
                 postToDB(data, path_Preview)
 
-                GPIO.output(leds[LED_BLUE], False)
-                GPIO.output(leds[LED_GREEN], True)
-
                 print("COMPLETE PROCESS!!!\n")
         except:
-                for i in range(0,3):
-                        GPIO.output(leds[i], False)
-                GPIO.output(leds[LED_RED], True)
         #print(str(LED_RED))
 
 ##########################################################################################################
@@ -204,11 +188,7 @@ client.loop_start()
 
 client.subscribe("/LINE/REALTIME" ,0 )
 
-
-
 run = True
 count = 0
 while run:
         count += 3
-
-# main()
